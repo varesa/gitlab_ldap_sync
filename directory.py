@@ -12,7 +12,9 @@ class Directory:
         self.ldap.simple_bind_s(dn, password)
 
     def get_users(self, path, filter):
-        users = self.ldap.search_s(path, ldap.SCOPE_SUBTREE, filterstr=filter, attrlist=['memberOf'])
+        users = self.ldap.search_s(
+            path, ldap.SCOPE_SUBTREE,
+            filterstr=filter, attrlist=['memberOf', 'uid', 'displayName', 'mail'])
         return users
 
     def get_groups(self, path):
