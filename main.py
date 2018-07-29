@@ -76,16 +76,6 @@ def sync_group_membership(gitlab, users_by_group):
             raise Exception("Invalid group name: {} (not found)".format(group_name))
 
 
-def reverse_dict(d):
-    d2 = {}
-    for key in d.keys():
-        for val in d[key]:
-            if val not in d2.keys():
-                d2[val] = []
-            d2[val].append(key)
-    return d2
-
-
 def main():
     # Get configuration
     config = Config((
