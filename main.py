@@ -1,7 +1,7 @@
 import secrets
 import string
 
-from gitlab import Gitlab, GUEST_ACCESS
+from gitlab import Gitlab, DEVELOPER_ACCESS
 
 from config import Config, ConfigOption
 from directory import Directory
@@ -43,7 +43,7 @@ def create_group_if_missing(gitlab, dn, attrs, parent_id):
 
 
 def set_group_members(gitlab, group, target_users):
-    print("Target members for group {}: {}".format(group.name, ' '.join(target_users)))
+    # print("Target members for group {}: {}".format(group.name, ' '.join(target_users)))
     existing_members = group.members.list()
     existing_usernames = []
     for member in existing_members:
@@ -60,7 +60,7 @@ def set_group_members(gitlab, group, target_users):
                 raise Exception("Gitlab user {} not found".format(user))
             group.members.create({
                 'user_id': user_search[0].id,
-                'access_level': GUEST_ACCESS
+                'access_level': DEVELOPER_ACCESS
             })
             print("Added {} to {}".format(user, group.name))
 
@@ -106,10 +106,9 @@ def main():
     directory = Directory(config['LDAP_URL'], config['LDAP_DN'], config['LDAP_PASSWORD'])
     gitlab = Gitlab(config['GITLAB_URL'], private_token=config['GITLAB_TOKEN'])
 
-    # Create missing groups
+    users_by_group = {}
 
-    for group in gitlab.groups.list():
-        print(group.path)
+    # Create missing groups
 
     ldap_groups = directory.get_groups(config['LDAP_GROUPS'])
     for dn, attrs in ldap_groups:
@@ -117,7 +116,7 @@ def main():
         if group_name.startswith('gitlab-') and group_name != 'gitlab-users':
             create_group_if_missing(gitlab, dn, attrs, config['GITLAB_PARENT'])
 
-    users = {}
+            users_by_group[group_name] = directory.get_member_uids(config['LDAP_USERS'], dn)
 
     # Create missing users
     ldap_users = directory.get_users(config['LDAP_USERS'], config['LDAP_USER_FILTER'])
@@ -127,13 +126,6 @@ def main():
         if not gitlab_user:
             create_user(gitlab, dn, attrs)
 
-        users[uid] = [
-            x.decode().split(',')[0][3:]
-            for x in attrs['memberOf']
-            if x.decode().startswith('cn=gitlab-') and not x.decode().startswith('cn=gitlab-users,')
-        ]
-
-    users_by_group = reverse_dict(users)
     sync_group_membership(gitlab, users_by_group)
 
 
