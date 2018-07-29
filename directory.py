@@ -18,5 +18,5 @@ class Directory:
         return users
 
     def get_groups(self, path):
-        groups = self.ldap.search_s(path, ldap.SCOPE_ONELEVEL, attrlist=['memberOf'])
+        groups = self.ldap.search_s(path, ldap.SCOPE_ONELEVEL, attrlist=['memberOf', 'cn'])
         return groups
